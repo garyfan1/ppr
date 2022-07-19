@@ -23,6 +23,7 @@ export interface MhrSearchCriteriaIF {
     ownerName?: { // Conditional: required if debtor search
       first?: string, // Conditional: required if debtor individual name search
       second?: string, // Optional if debtor individual name search
+      middle?: string, // Optional: When doing an owner name search
       last?: string, // Conditional: required if debtor individual name search
       business?: string // Conditional: required if debtor business name search
     }

@@ -390,6 +390,9 @@ export default defineComponent({
 
         const settings: UserSettingsIF = getUserSettings.value
         return settings?.paymentConfirmationDialog
+      }),
+      searchValueMiddle: computed(() => { // middle name text filed is shared with second name
+        return localState.searchValueSecond
       })
     })
 
@@ -414,13 +417,14 @@ export default defineComponent({
       if (localState.isIndividual) {
         const first = cleanUpInput(localState.searchValueFirst)
         const second = cleanUpInput(localState.searchValueSecond)
+        const middle = cleanUpInput(localState.searchValueMiddle)
         const last = cleanUpInput(localState.searchValueLast)
 
         if (isPPRSearchType(localState.selectedSearchType.searchTypeAPI)) {
           return { debtorName: { first: first, second: second, last: last } }
         }
         if (isMHRSearchType(localState.selectedSearchType.searchTypeAPI)) {
-          return { ownerName: { first: first, second: second, last: last } }
+          return { ownerName: { first: first, middle: middle, last: last } }
         }
       } else if (localState.selectedSearchType.searchTypeAPI === APISearchTypes.BUSINESS_DEBTOR) {
         return { debtorName: { business: cleanUpInput(localState.searchValue) } }
