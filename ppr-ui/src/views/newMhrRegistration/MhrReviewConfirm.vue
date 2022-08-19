@@ -41,33 +41,56 @@
         <p class="mt-4"></p>
       </article>
 
-      <v-card flat class="mt-6">
+      <v-card flat class="mt-6 pa-6">
         <!-- Staff Payment Piece -->
+        <staff-payment-component
+          id="staff-payment-card"
+          :staffPaymentData="staffPaymentData"
+          :validate="validatingStaffPayment"
+          :displaySideLabel="true"
+          :displayPriorityCheckbox="true"
+          :invalidSection="false"
+          @update:staffPaymentData="onStaffPaymentDataUpdate($event)"
+          @valid="staffPaymentValid = $event"
+        />
       </v-card>
     </section>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent, reactive, toRefs, watch } from '@vue/composition-api'
+import { defineComponent, onMounted, reactive, toRefs, watch } from '@vue/composition-api'
 import { HomeLocationReview, SubmittingPartyReview, YourHomeReview } from '@/components/mhrRegistration/ReviewConfirm'
 import { useMhrValidations } from '@/composables'
 import { RouteNames } from '@/enums'
-import { useGetters } from 'vuex-composition-helpers'
+import { useGetters, useActions } from 'vuex-composition-helpers'
+import { StaffPayment as StaffPaymentComponent } from '@bcrs-shared-components/staff-payment'
+import { StaffPaymentOptions } from '@bcrs-shared-components/enums'
+// eslint-disable-next-line no-unused-vars
+import { StaffPaymentIF } from '@bcrs-shared-components/interfaces'
 
 export default defineComponent({
   name: 'MhrReviewConfirm',
   components: {
     YourHomeReview,
     SubmittingPartyReview,
-    HomeLocationReview
+    HomeLocationReview,
+    StaffPaymentComponent
   },
   props: {},
   setup (props, context) {
     const {
-      getMhrRegistrationValidationModel
+      getMhrRegistrationValidationModel,
+      getStaffPayment
     } = useGetters<any>([
-      'getMhrRegistrationValidationModel'
+      'getMhrRegistrationValidationModel',
+      'getStaffPayment'
+    ])
+
+    const {
+      setStaffPayment
+    } = useActions<any>([
+      'setStaffPayment'
     ])
 
     const {
@@ -78,7 +101,71 @@ export default defineComponent({
       getStepValidation
     } = useMhrValidations(toRefs(getMhrRegistrationValidationModel.value))
 
-    const localState = reactive({})
+    const localState = reactive({
+      staffPaymentData: {
+        option: StaffPaymentOptions.NONE,
+        routingSlipNumber: '',
+        bcolAccountNumber: '',
+        datNumber: '',
+        folioNumber: '',
+        isPriority: false
+      },
+      staffPaymentValid: null,
+      validatingStaffPayment: false
+    })
+
+    onMounted(() => {
+      if (getStaffPayment.value) {
+        localState.staffPaymentData = { ...getStaffPayment.value }
+      }
+    })
+
+    const onStaffPaymentDataUpdate = (val: StaffPaymentIF) => {
+      let staffPaymentData: StaffPaymentIF = {
+        ...val
+      }
+
+      // disable validation
+      switch (staffPaymentData.option) {
+        case StaffPaymentOptions.FAS:
+          staffPaymentData = {
+            option: StaffPaymentOptions.FAS,
+            routingSlipNumber: staffPaymentData.routingSlipNumber,
+            isPriority: staffPaymentData.isPriority,
+            bcolAccountNumber: '',
+            datNumber: '',
+            folioNumber: ''
+          }
+          break
+
+        case StaffPaymentOptions.BCOL:
+          staffPaymentData = {
+            option: StaffPaymentOptions.BCOL,
+            bcolAccountNumber: staffPaymentData.bcolAccountNumber,
+            datNumber: staffPaymentData.datNumber,
+            folioNumber: staffPaymentData.folioNumber,
+            isPriority: staffPaymentData.isPriority,
+            routingSlipNumber: ''
+          }
+          break
+
+        case StaffPaymentOptions.NO_FEE:
+          staffPaymentData = {
+            option: StaffPaymentOptions.NO_FEE,
+            routingSlipNumber: '',
+            isPriority: false,
+            bcolAccountNumber: '',
+            datNumber: '',
+            folioNumber: ''
+          }
+          break
+
+        case StaffPaymentOptions.NONE: // should never happen
+          break
+      }
+
+      setStaffPayment(staffPaymentData)
+    }
 
     watch(() => context.root.$route.name, (route: string) => {
       switch (route) {
@@ -108,6 +195,7 @@ export default defineComponent({
     })
 
     return {
+      onStaffPaymentDataUpdate,
       ...toRefs(localState)
     }
   }
